@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Record Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+  <div class="card p-4 shadow">
+    <h1 class="text-center mb-4">Record Dashboard</h1>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <!-- Record Sale -->
+    <form method="POST" action="/" class="mb-4">
+      <div class="row mb-2">
+        <div class="col">
+          <input type="text" id="customerName" name="customerName" placeholder="Customer Name *" class="form-control" required>
+        </div>
+        <div class="col">
+          <input type="text" id="phoneNumber" name="phoneNumber" placeholder="Phone Number *" class="form-control" required>
+        </div>
+      </div>
+      <div class="row mb-2">
+        <div class="col">
+          <select name="productName" class="form-control" required>
+            <option value="">-- Select Product --</option>
+            <option>Product A</option>
+            <option>Product B</option>
+            <option>Product C</option>
+            <option>Product D</option>
+            <option>Product E</option>
+            <option>Product F</option>
+            <option>Product G</option>
+            <option>Product H</option>
+            <option>Product I</option>
+            <option>Product J</option>
+          </select>
+        </div>
+        <div class="col"><input type="number" name="quantity" placeholder="Quantity" class="form-control"></div>
+      </div>
+      <div class="row mb-2">
+        <div class="col"><input type="number" step="0.01" id="amount" name="amount" placeholder="Total Amount (₹) *" class="form-control" required></div>
+        <div class="col"><input type="number" step="0.01" id="cashGiven" name="cashGiven" placeholder="Cash Given (₹)" class="form-control"></div>
+      </div>
+      <button type="submit" class="btn btn-primary">💾 Save Record</button>
+    </form>
+
+    <!-- Search -->
+    <form method="GET" action="/" class="mb-3 d-flex">
+      <input type="text" name="q" placeholder="Search by customer name or phone" class="form-control me-2" value="{{ query }}">
+      <button type="submit" class="btn btn-secondary">🔍 Search</button>
+    </form>
+
+    <!-- Sales Table -->
+    {% if data %}
+      <h3>Search Results</h3>
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Product</th>
+              <th>Qty</th>
+              <th>Total Amount</th>
+              <th>Cash Given</th>
+              <th>Cash After Given</th>
+              <th>Due</th>
+              <th>Date Created</th>
+              <th>Last Updated</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in data %}
+              <tr>
+                <form method="POST" action="{{ url_for('update_sale', sale_id=s[0]) }}">
+                  <td>{{ s[1] }}</td>
+                  <td>{{ s[2] }}</td>
+                  <td>{{ s[3] }}</td>
+                  <td>{{ s[4] }}</td>
+                  <td><input type="hidden" name="amount" value="{{ s[5] }}">₹{{ "%.2f"|format(s[5]) }}</td>
+                  <td>₹{{ "%.2f"|format(s[6]) }}</td>
+                  <td><input type="number" step="0.01" name="afterGiven" value="{{ s[7] }}" class="form-control"></td>
+                  <td>₹{{ "%.2f"|format(s[8]) }}</td>
+                  <td>{{ s[9] }}</td>
+                  <td>{{ s[10] }}</td>
+                  <td><button type="submit" class="btn btn-success btn-sm">💾 Update</button></td>
+                </form>
+              </tr>
+            {% endfor %}
+            <!-- Total Due Row -->
+            <tr class="table-warning fw-bold">
+              <td colspan="7" class="text-end">Total Due:</td>
+              <td colspan="4">₹{{ "%.2f"|format(total_due) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    {% elif query %}
+      <p class="text-muted">No records found.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Autofill phone if customer name exists
+document.getElementById("customerName").addEventListener("blur", function() {
+  if (this.value.trim() !== "") {
+    fetch(`/api/autofill?name=${this.value}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.phone) document.getElementById("phoneNumber").value = data.phone;
+      });
+  }
+});
+
+// Autofill name if phone exists
+document.getElementById("phoneNumber").addEventListener("blur", function() {
+  if (this.value.trim() !== "") {
+    fetch(`/api/autofill?phone=${this.value}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.name) document.getElementById("customerName").value = data.name;
+      });
+  }
+});
+</script>
+</body>
+</html>
